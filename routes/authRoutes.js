@@ -1,11 +1,10 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import user from "../models/user.js";
+import User from "../models/user.js"; // ✅ correct import
 import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
-
 
 // =======================
 // SIGN UP API
@@ -19,7 +18,7 @@ router.post("/signup", async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await user.findOne({ email });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({ message: "User already exists" });
     }
@@ -29,7 +28,7 @@ router.post("/signup", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create user
-    const user = new user({
+    const user = new User({
       name,
       email,
       password: hashedPassword
@@ -37,13 +36,12 @@ router.post("/signup", async (req, res) => {
 
     await user.save();
 
-    res.status(201).json({ message: "User registered successfully" });
+    res.status(201).json({ message: "User registered successfully", user });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Signup failed" });
   }
 });
-
 
 // =======================
 // LOGIN API
@@ -57,13 +55,13 @@ router.post("/login", async (req, res) => {
     }
 
     // Find user
-    const user = await user.findOne({ email });
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password); // ✅ use instance password
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -90,9 +88,12 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// =======================
+// GET LOGGED-IN USER
+// =======================
 router.get("/me", authMiddleware, async (req, res) => {
   try {
-    const user = await user.findById(req.userId).select("-password");
+    const user = await User.findById(req.userId).select("-password"); // ✅ use model
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
