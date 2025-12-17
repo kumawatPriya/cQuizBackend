@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import questionRoutes from "./routes/questionRoutes.js";
 import authRoute from "./routes/authRoutes.js"
+import resultRoutes from "./routes/resultRoutes.js"
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -19,7 +20,8 @@ mongoose
 
 // Routes
 app.use("/api/questions", questionRoutes);
-app.use("/api/auth", authRoute)
+app.use("/api/auth", authRoute);
+app.use("/api/results", resultRoutes);
 
 app.get("/", (req, res) => {
   res.send("Quiz Backend Running");
