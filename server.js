@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import questionRoutes from "./routes/questionRoutes.js";
+import authRoute from "./routes/authRoutes.js"
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -18,6 +19,7 @@ mongoose
 
 // Routes
 app.use("/api/questions", questionRoutes);
+app.use("/api/auth", authRoute)
 
 app.get("/", (req, res) => {
   res.send("Quiz Backend Running");
