@@ -74,5 +74,27 @@ router.get("/leaderboard", async (req, res) => {
   res.json(leaderboard);
 });
 
+// Get logged-in user's quiz history
+router.get("/my", authMiddleware, async (req, res) => {
+  try {
+    const { level } = req.query; // optional filter
+
+    const query = { userId: req.userId };
+
+    if (level) {
+      query.level = level; // easy | medium | hard
+    }
+
+    const results = await Result.find(query)
+      .sort({ createdAt: -1 }) // latest first
+      .select("level score totalQuestions createdAt");
+
+    res.json(results);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch quiz history" });
+  }
+});
+
 
 export default router;
