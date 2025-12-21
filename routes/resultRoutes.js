@@ -44,35 +44,69 @@ router.post("/", authMiddleware, async (req, res) => {
 
 
 router.get("/leaderboard", async (req, res) => {
-  const leaderboard = await Result.aggregate([
-    {
-      $group: {
-        _id: "$userId",
-        maxScore: { $max: "$score" }
-      }
-    },
-    { $sort: { maxScore: -1 } },
-    { $limit: 10 },
-    {
-      $lookup: {
-        from: "users",
-        localField: "_id",
-        foreignField: "_id",
-        as: "user"
-      }
-    },
-    { $unwind: "$user" },
-    {
-      $project: {
-        name: "$user.name",
-        email: "$user.email",
-        score: "$maxScore"
-      }
-    }
-  ]);
+  try {
+    const { level } = req.query;
 
-  res.json(leaderboard);
+    const matchStage = level ? { level } : {};
+
+    const leaderboard = await Result.aggregate([
+      { $match: matchStage },
+
+      {
+        $group: {
+          _id: {
+            userId: "$userId",
+            level: "$level"
+          },
+          maxScore: { $max: "$score" },
+          totalQuestions: { $max: "$totalQuestions" }
+        }
+      },
+
+      { $sort: { maxScore: -1 } },
+      { $limit: 10 },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id.userId",
+          foreignField: "_id",
+          as: "user"
+        }
+      },
+
+      { $unwind: "$user" },
+
+      {
+        $project: {
+          _id: 0,
+          name: "$user.name",
+          email: "$user.email",
+          level: "$_id.level",
+          score: "$maxScore",
+          accuracy: {
+            $round: [
+              {
+                $multiply: [
+                  { $divide: ["$maxScore", "$totalQuestions"] },
+                  100
+                ]
+              },
+              1
+            ]
+          }
+        }
+      }
+    ]);
+
+    res.json(leaderboard);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Leaderboard error" });
+  }
 });
+
+
 
 // Get logged-in user's quiz history
 router.get("/my", authMiddleware, async (req, res) => {
